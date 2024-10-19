@@ -3,19 +3,20 @@ import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBAe0fqnhgNAm4yxY6v3GR5ajWaHZGqlhI",
-  authDomain: "careindiaapp-795fe.firebaseapp.com",
-  projectId: "careindiaapp-795fe",
-  storageBucket: "careindiaapp-795fe.appspot.com",
-  messagingSenderId: "1069706010650",
-  appId: "1:1069706010650:web:b54030d127afc7b9bc71a3",
+  apiKey: "AIzaSyDRzeDmRNsvVXhk6hWPIViJBHrdssdsh2U",
+  authDomain: "healthcare-1f835.firebaseapp.com",
+  projectId: "healthcare-1f835",
+  storageBucket: "healthcare-1f835.appspot.com",
+  messagingSenderId: "211281943401",
+  appId: "1:211281943401:web:9b5736bf9dd20355273bf8"
 };
+
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firestore and Auth
-export const db = getFirestore(app);
-export const auth = getAuth(app);
+// Initialize Firebase Authentication and Firestore
+const auth = getAuth(app);
+const db = getFirestore(app);
 
-export default app;
+export { auth, db };

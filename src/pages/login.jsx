@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom"; 
-import loginImage from '../pages/images/login_img.png';
+import loginImage from '../pages/images/login_img.png'; // Ensure the image path is correct
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../firebase/firebaseConfig"; // Adjust the path as needed
 
 export default function Login_Page({ onLogin }) {
   const location = useLocation();
@@ -11,17 +13,34 @@ export default function Login_Page({ onLogin }) {
   const [password, setPassword] = useState("");
   const navigate = useNavigate(); // Hook to programmatically navigate
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onLogin(email, password);
+    try {
+      // Call Firebase Authentication for login
+      await signInWithEmailAndPassword(auth, email, password);
+      // Call onLogin if passed as a prop
+      if (onLogin) {
+        onLogin(email, password);
+      }
+      // Navigate to the appropriate dashboard based on userType
+      if (userType === "patient") {
+        navigate("/patient-dashboard");
+      } else if (userType === "nurse") {
+        navigate("/nurse-dashboard");
+      }
+    } catch (error) {
+      console.error("Login failed:", error.message);
+    }
   };
 
   const handleSignupClick = () => {
     // Redirect to the respective signup page based on user type
     if (userType === "patient") {
-      navigate("/patient-signup"); // Update with actual signup route
+      navigate("/patient-signup");
     } else if (userType === "nurse") {
-      navigate("/nurse-signup"); // Update with actual signup route
+      navigate("/nurse-signup");
+    } else {
+      alert("User type not specified.");
     }
   };
 
@@ -30,7 +49,7 @@ export default function Login_Page({ onLogin }) {
       <div className="w-full max-w-4xl h-[400px] bg-white rounded-xl shadow-lg overflow-hidden">
         <div className="md:flex">
           <div className="md:w-1/2 text-white flex flex-col justify-center items-center">
-            <div className="bg-white h-[100%]"><img src={loginImage} alt="" /></div>
+            <div className="bg-white h-[100%]"><img src={loginImage} alt="Login" /></div>
           </div>
           <div className="md:w-1/2 p-8">
             <h2 className="text-3xl font-bold text-blue-500 mb-6">Login</h2>

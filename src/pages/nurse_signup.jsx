@@ -1,8 +1,11 @@
 import { useState } from "react";
 import { Link } from "react-router-dom"; 
 import { motion } from "framer-motion";
+import { auth, db } from "../firebase/firebaseConfig"; // Import Firebase services
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { doc, setDoc } from "firebase/firestore"; // Firestore functions
 
-export default function SignupPage({ onRegister, setShowSignup }) {
+export default function NurseSignupPage({ onRegister, setShowNurseSignup }) {
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -15,19 +18,59 @@ export default function SignupPage({ onRegister, setShowSignup }) {
     phoneNumber: "",
     acceptTerms: false,
   });
+  const [error, setError] = useState(""); // State to handle error messages
 
   const handleChange = (e) => {
     const { name, type, checked, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
+    setError(""); // Clear error on input change
   };
 
-  const handleSubmit = (e) => {
+  const isEmailValid = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const isPasswordValid = (password) => password.length >= 6;
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validate email and password
+    if (!isEmailValid(formData.email)) {
+      alert("Please enter a valid email address.");
+      return;
+    }
+    
+    if (!isPasswordValid(formData.password)) {
+      alert("Password must be at least 6 characters long.");
+      return;
+    }
+
     if (formData.password === formData.confirmPassword) {
-      onRegister(formData.email, formData.password, formData.fullName);
+      try {
+        const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+        const user = userCredential.user;
+
+        // Save user data to Firestore
+        await setDoc(doc(db, "nurses", user.uid), {
+          fullName: formData.fullName,
+          qualification: formData.qualification,
+          workplace: formData.workplace,
+          workingHours: formData.workingHours,
+          workSchedule: formData.workSchedule,
+          phoneNumber: formData.phoneNumber,
+        });
+
+        onRegister(formData.email, formData.password, formData.fullName);
+        // Redirect or show success message
+      } catch (error) {
+        console.error("Error creating user:", error);
+        if (error.code === "auth/email-already-in-use") {
+          setError("This email is already in use. Please use a different email.");
+        } else {
+          setError("Error creating user: " + error.message);
+        }
+      }
     } else {
       alert("Passwords do not match");
     }
@@ -44,10 +87,10 @@ export default function SignupPage({ onRegister, setShowSignup }) {
             className="md:w-1/3 bg-blue-500 p-8 text-white flex flex-col justify-center items-center relative"
           >
             <h2 className="text-3xl font-bold mb-4 text-center">Join Nurse Connect</h2>
-            <p className="text-center mb-4">Create your profile and connect with healthcare professionals</p>
+            <p className="text-center mb-4">Create your nurse profile and connect with healthcare professionals</p>
           </motion.div>
           <div className="md:w-2/3 p-8">
-            <h2 className="text-3xl font-bold text-blue-500 mb-6">Sign Up</h2>
+            <h2 className="text-3xl font-bold text-blue-500 mb-6">Nurse Sign Up</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label htmlFor="fullName" className="text-blue-900">Full Name</label>
@@ -176,16 +219,17 @@ export default function SignupPage({ onRegister, setShowSignup }) {
                   </Link>
                 </label>
               </div>
-              <button type="submit" className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded">
+              {error && <p className="text-red-500 text-center">{error}</p>} {/* Display error message */}
+              <button type="submit" className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-md">
                 Sign Up
               </button>
+              <p className="text-center">
+                Already have an account?{" "}
+                <Link to="/login" className="text-blue-500 hover:underline">
+                  Log in
+                </Link>
+              </p>
             </form>
-            <p className="mt-4 text-center text-sm text-gray-600">
-              Already have an account?{" "}
-              <button onClick={() => setShowSignup(false)} className="text-blue-500 hover:underline">
-                Log in
-              </button>
-            </p>
           </div>
         </div>
       </div>

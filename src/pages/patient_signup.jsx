@@ -1,12 +1,15 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom"; // Import useNavigate
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { auth, db } from "../firebase/firebaseConfig"; // Adjust the import based on your file structure
+import { collection, addDoc } from "firebase/firestore";
 
 export default function SeniorSignupPage() {
   const [formData, setFormData] = useState({
     fullName: "",
     dateOfBirth: "",
     gender: "",
-    bloodGrp:"",
+    bloodGrp: "",
     email: "",
     password: "",
     confirmPassword: "",
@@ -28,6 +31,8 @@ export default function SeniorSignupPage() {
     preferredContactMethod: "",
   });
 
+  const navigate = useNavigate(); // Initialize useNavigate
+
   const handleChange = (e) => {
     const { name, value, type } = e.target;
     setFormData((prev) => ({
@@ -36,10 +41,40 @@ export default function SeniorSignupPage() {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Handle sign-up logic here
-    console.log(formData);
+    const { email, password, confirmPassword } = formData;
+
+    if (password !== confirmPassword) {
+      alert("Passwords do not match!");
+      return;
+    }
+
+    try {
+      // Firebase Authentication
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      // Add user data to Firestore
+      await addDoc(collection(db, "patients"), {
+        ...formData,
+        uid: user.uid,
+        createdAt: new Date(),
+      });
+
+      console.log("User created and data saved!");
+      // Redirect to the dashboard after successful signup
+      navigate("/patient-dashboard"); // Navigate to the patient dashboard
+
+    } catch (error) {
+      // Error handling for specific Firebase errors
+      if (error.code === "auth/email-already-in-use") {
+        alert("This email is already in use. Please try with a different email or login.");
+      } else {
+        console.error("Error during signup: ", error);
+        alert("Error signing up. Please try again.");
+      }
+    }
   };
 
   return (
@@ -195,94 +230,12 @@ export default function SeniorSignupPage() {
                     className="w-full border border-blue-300 focus:border-blue-500 focus:ring focus:ring-blue-500 rounded-md p-2"
                   />
                 </div>
-                <div>
-                  <label htmlFor="previousSurgeries" className="text-blue-700">Previous Surgeries</label>
-                  <textarea
-                    id="previousSurgeries"
-                    name="previousSurgeries"
-                    value={formData.previousSurgeries}
-                    onChange={handleChange}
-                    placeholder="List any previous surgeries"
-                    className="w-full border border-blue-300 focus:border-blue-500 focus:ring focus:ring-blue-500 rounded-md p-2"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <h3 className="text-xl font-semibold text-blue-600">Health Status</h3>
-                <div>
-                  <label htmlFor="mobilityIssues" className="text-blue-700">Mobility Issues</label>
-                  <textarea
-                    id="mobilityIssues"
-                    name="mobilityIssues"
-                    value={formData.mobilityIssues}
-                    onChange={handleChange}
-                    placeholder="Describe any mobility challenges or assistance required"
-                    className="w-full border border-blue-300 focus:border-blue-500 focus:ring focus:ring-blue-500 rounded-md p-2"
-                  />
-                </div>
-                
-                <div>
-                  <label htmlFor="visionHearingImpairments" className="text-blue-700">Vision/Hearing Impairments</label>
-                  <textarea
-                    id="visionHearingImpairments"
-                    name="visionHearingImpairments"
-                    value={formData.visionHearingImpairments}
-                    onChange={handleChange}
-                    placeholder="Describe any vision or hearing impairments"
-                    className="w-full border border-blue-300 focus:border-blue-500 focus:ring focus:ring-blue-500 rounded-md p-2"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="dietaryRestrictions" className="text-blue-700">Dietary Restrictions</label>
-                  <textarea
-                    id="dietaryRestrictions"
-                    name="dietaryRestrictions"
-                    value={formData.dietaryRestrictions}
-                    onChange={handleChange}
-                    placeholder="List any dietary restrictions"
-                    className="w-full border border-blue-300 focus:border-blue-500 focus:ring focus:ring-blue-500 rounded-md p-2"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="physicalActivityLevel" className="text-blue-700">Physical Activity Level</label>
-                  <textarea
-                    id="physicalActivityLevel"
-                    name="physicalActivityLevel"
-                    value={formData.physicalActivityLevel}
-                    onChange={handleChange}
-                    placeholder="Describe your physical activity level"
-                    className="w-full border border-blue-300 focus:border-blue-500 focus:ring focus:ring-blue-500 rounded-md p-2"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="livingSituation" className="text-blue-700">Living Situation</label>
-                  <textarea
-                    id="livingSituation"
-                    name="livingSituation"
-                    value={formData.livingSituation}
-                    onChange={handleChange}
-                    placeholder="Describe your living situation (alone, with family, etc.)"
-                    className="w-full border border-blue-300 focus:border-blue-500 focus:ring focus:ring-blue-500 rounded-md p-2"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="caregiverSupport" className="text-blue-700">Caregiver Support</label>
-                  <textarea
-                    id="caregiverSupport"
-                    name="caregiverSupport"
-                    value={formData.caregiverSupport}
-                    onChange={handleChange}
-                    placeholder="Describe any caregiver support you have"
-                    className="w-full border border-blue-300 focus:border-blue-500 focus:ring focus:ring-blue-500 rounded-md p-2"
-                  />
-                </div>
               </div>
 
               <div className="space-y-4">
                 <h3 className="text-xl font-semibold text-blue-600">Emergency Contact</h3>
                 <div>
-                  <label htmlFor="emergencyContactName" className="text-blue-700">Emergency Contact Name</label>
+                  <label htmlFor="emergencyContactName" className="text-blue-700">Contact Name</label>
                   <input
                     id="emergencyContactName"
                     name="emergencyContactName"
@@ -293,7 +246,7 @@ export default function SeniorSignupPage() {
                   />
                 </div>
                 <div>
-                  <label htmlFor="emergencyContactPhone" className="text-blue-700">Emergency Contact Phone</label>
+                  <label htmlFor="emergencyContactPhone" className="text-blue-700">Contact Phone Number</label>
                   <input
                     id="emergencyContactPhone"
                     name="emergencyContactPhone"
@@ -309,39 +262,29 @@ export default function SeniorSignupPage() {
               <div className="space-y-4">
                 <label className="flex items-center">
                   <input
-                    type="checkbox"
                     name="consentToShareData"
+                    type="checkbox"
                     checked={formData.consentToShareData}
                     onChange={handleChange}
                     className="mr-2"
                   />
-                  I consent to share my data with healthcare providers for personalized care.
+                  <span className="text-blue-700">I consent to share my medical data for caregiving purposes.</span>
                 </label>
-                <div>
-                  <label htmlFor="preferredContactMethod" className="text-blue-700">Preferred Contact Method</label>
-                  <select
-                    name="preferredContactMethod"
-                    value={formData.preferredContactMethod}
-                    onChange={handleChange}
-                    className="w-full border border-blue-300 focus:border-blue-500 focus:ring focus:ring-blue-500 rounded-md p-2"
-                  >
-                    <option value="" disabled>Select method</option>
-                    <option value="phone">Phone</option>
-                    <option value="email">Email</option>
-                  </select>
-                </div>
               </div>
 
-              <button
-                type="submit"
-                className="w-full bg-blue-600 text-white font-bold py-2 rounded hover:bg-blue-700 transition duration-300"
-              >
-                Sign Up
-              </button>
+              <div>
+                <button
+                  type="submit"
+                  className="w-full bg-blue-600 text-white font-semibold py-2 rounded-md hover:bg-blue-700"
+                >
+                  Sign Up
+                </button>
+              </div>
+              <p className="text-center">
+                Already have an account?{" "}
+                <Link to="/patient-login" className="text-blue-600 hover:underline">Log In</Link>
+              </p>
             </form>
-            <p className="mt-4 text-center">
-              Already have an account? <Link to="/login" className="text-blue-600">Log in</Link>
-            </p>
           </div>
         </div>
       </div>
